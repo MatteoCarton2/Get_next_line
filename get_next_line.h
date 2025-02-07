@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: mcarton <mcarton@student.s19.be>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/02/05 21:23:20 by mcarton           #+#    #+#             */
-/*   Updated: 2025/02/07 11:56:10 by mcarton          ###   ########.fr       */
+/*   Created: 2024/12/03 15:32:25 by mcarton           #+#    #+#             */
+/*   Updated: 2025/02/07 22:14:09 by mcarton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,9 +17,18 @@
 #  define BUFFER_SIZE 255
 # endif
 
-#include <unistd.h>
-#include <stdlib.h>
+# if BUFFER_SIZE < 0
+#  undef BUFFER_SIZE
+#  define BUFFER_SIZE 0
+# endif
 
-char *get_next_line(int fd);
+# include <stdlib.h>
+# include <unistd.h>
+
+char	*get_next_line(int fd);
+size_t	ft_strlen(const char *str);
+char	*ft_strjoin(char const *str1, char const *str2);
+char	*ft_strchr(const char *str, int c);
+void	ft_free(char **str);
 
 #endif

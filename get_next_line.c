@@ -5,107 +5,142 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: mcarton <mcarton@student.s19.be>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/02/05 17:56:16 by mcarton           #+#    #+#             */
-/*   Updated: 2025/02/07 11:55:50 by mcarton          ###   ########.fr       */
+/*   Created: 2024/12/03 15:32:23 by mcarton           #+#    #+#             */
+/*   Updated: 2025/02/07 22:09:19 by mcarton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
-char *get_next_line(int fd)
+static void	initialize_buffer(char **line)
 {
-    int bytes_read;
-    size_t i;
-    size_t j;
-    size_t k;
-    char *buffer;     // on créer le "sceau", le buffer
-    int flag; // temporaire
-    char *line;
-    static char *remaining;
-
-    i = 0;
-    j = 0;
-    k = 0;
-    flag = 0; // temporaire
-    buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1)); // on malloc ce "sceau" avec la taille du sceau défini via BUFFER_SIZE + \0
-    if (!buffer)
-        return (NULL);    
-    bytes_read = read(fd, buffer, BUFFER_SIZE);  // read = remplit le buffer
-    //	•	fd → Le fichier à lire (le descripteur de fichier).
-	//  •	buffer → Là où les données seront stockées (le sceau).
-	//  •	BUFFER_SIZE → Combien d’octets on veut lire à chaque fois(la taille du sceau).
-    if (bytes_read < 1)     // si c'est 0 = fin du fichier, si -1 = erreur
-        return (free(buffer), NULL);
-    buffer[bytes_read] = '\0'; // mettre le \0 à la position bytes_read, car c’est le nombre exact de caractères lus.
-    while (buffer[i])
-    {
-        if(buffer[i] == '\n')
-        {
-            printf("Position trouvée = %zu\n", i);
-            flag = 1;
-            line = malloc(sizeof(char) * (i + 2));
-            if (!line)
-                return (free(buffer), NULL);
-            while (j <= i)
-            {
-                line[j] = buffer[j];
-                j++;
-            }
-            line[j] = '\0';
-            remaining = malloc(sizeof(char) * ());
-            if (!remaining)
-                return(free(line), free(buffer), NULL);
-            while (j < i)
-            {
-                remaining[k] = buffer[j];
-                j++;
-            }
-            remaining[k] = '\0';
-            break;
-        }
-        i++;
-    }
-    if (flag == 0)
-    {
-        printf("Pas de saut de ligne trouvé\n");
-        line = malloc(sizeof(char) * (i + 2));
-        if (!line)
-            return (free(buffer), NULL);
-        while (j < i)
-            {
-                line[j] = buffer[j];
-                j++;
-            }
-        line[j] = '\0';
-    }
-    free(buffer);
-    return (line);
+	if (!*line)
+	{
+		*line = malloc(1);
+		if (!*line)
+			return ((void) NULL);
+		(*line)[0] = '\0';
+	}
 }
 
+static char	*update_buffer(char *buff)
+{
+	size_t	i;
+	size_t	len;
+	char	*newbuff;
+
+	len = 0;
+	i = 0;
+	while (buff[len] && buff[len] != '\n')
+		len++;
+	if (buff[len] == '\n')
+		len++;
+	if (buff[len] == '\0')
+		return (free(buff), NULL);
+	newbuff = malloc(ft_strlen(buff) - len + 1);
+	if (!newbuff)
+		return (free(buff), NULL);
+	while (buff[len])
+		newbuff[i++] = buff[len++];
+	newbuff[i] = '\0';
+	free(buff);
+	return (newbuff);
+}
+
+static char	*extract_line(char *buff)
+{
+	size_t	len;
+	size_t	i;
+	char	*line;
+
+	len = 0;
+	i = 0;
+	while (buff[len] && buff[len] != '\n')
+		len++;
+	if (buff[len] == '\n')
+		len++;
+	line = malloc(sizeof(char) * (len + 1));
+	if (!line)
+		return (NULL);
+	while (i < len)
+	{
+		line[i] = buff[i];
+		i++;
+	}
+	line[i] = '\0';
+	return (line);
+}
+
+static char	*read_buffer(int fd, char **line)
+{
+	int		nbyte;
+	char	*tempbuff;
+	char	*newline;
+
+	nbyte = 1;
+	initialize_buffer(line);
+	if (*line == NULL)
+		return (NULL);
+	while (!(ft_strchr(*line, '\n')) && nbyte > 0)
+	{
+		tempbuff = malloc(sizeof(char) * (BUFFER_SIZE + 1));
+		if (!tempbuff)
+			return (ft_free(line), free(tempbuff), NULL);
+		nbyte = read(fd, tempbuff, BUFFER_SIZE);
+		if (nbyte == -1)
+			return (free(tempbuff), ft_free(line), NULL);
+		tempbuff[nbyte] = '\0';
+		newline = ft_strjoin(*line, tempbuff);
+		if (newline == NULL)
+			return (free(tempbuff), ft_free(line), line = NULL, NULL);
+		ft_free(line);
+		*line = newline;
+		free(tempbuff);
+	}
+	return (*line);
+}
+
+char	*get_next_line(int fd)
+{
+	char		*line;
+	static char	*buffer = NULL;
+
+	line = NULL;
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+	buffer = read_buffer(fd, &buffer);
+	if (!buffer || buffer[0] == '\0')
+	{
+		ft_free(&buffer);
+		return (NULL);
+	}
+	line = extract_line(buffer);
+	if (!line)
+		return (ft_free(&buffer), NULL);
+	buffer = update_buffer(buffer);
+	return (line);
+}
+/*
 #include <fcntl.h>
 #include <stdio.h>
 
-int main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
-    int fd;
-    char *line;
-    
-    if (argc != 2)
-        return (0);
-    fd = open(argv[1], O_RDONLY);
-    if (fd == -1)
-    {
-        printf("Erreur lors de l'open du fd\n");
-        return (0);
-    }
-    line = get_next_line(fd);
-    while (line)
-    {
-        printf("%s", line);
-        free(line);
-        line = get_next_line(fd);
-    }
-    close(fd);
-    return (0);
+	int fd;
+	char *line;
+
+	if (argc != 2)
+		return (1);
+	fd = open(argv[1], O_RDONLY);
+	line = get_next_line(fd);
+	while (line)
+	{
+		printf("%s", line);
+		free(line);
+		line = get_next_line(fd);
+	}
+	free(line);
+	close(fd);
+	return (0);
 }
+*/
